@@ -1,0 +1,6 @@
+{
+  "name": "Fianex Backoffice & Ops Portal",
+  "description": "Plataforma integral de operaciones backoffice para la app móvil Fianex: control de usuarios, validación documental de expertos, soporte, métricas en tiempo real y arquitectura de microservicios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
