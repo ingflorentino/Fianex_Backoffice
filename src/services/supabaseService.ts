@@ -18,6 +18,7 @@ export interface SupabaseProfileView {
   province_name: string | null;
   is_verified: boolean | null;
   role_id: number;
+  current_mode_id?: number | null;
   status: number;
 }
 
