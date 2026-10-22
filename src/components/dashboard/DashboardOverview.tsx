@@ -36,32 +36,34 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onExportReport,
   isDark = false
 }) => {
-  // Compute Key Metrics
-  const activeClients = users.filter((u) => u.type === 'client' && u.status === 'active');
-  const activeClientsCount = 1420 + activeClients.length;
+  // Compute Real Metrics directly from Supabase tables:
+  // 1. Tabla 'perfiles': role_id = 1 (Clientes), role_id = 2 (Expertos)
+  const clientsList = users.filter((u) => u.role_id === 1 || u.type === 'client');
+  const activeClientsCount = clientsList.length;
 
-  const activeExperts = users.filter((u) => u.type === 'expert' && u.status === 'active');
-  const activeExpertsCount = 284 + activeExperts.length;
+  const expertsList = users.filter((u) => u.role_id === 2 || u.type === 'expert');
+  const activeExpertsCount = expertsList.length;
 
-  // Expert subscription plans breakdown
-  const basicoCount = 142 + users.filter((u) => u.type === 'expert' && u.expertPlan === 'basico').length;
-  const intermedioCount = 88 + users.filter((u) => u.type === 'expert' && u.expertPlan === 'intermedio').length;
-  const premiumCount = 54 + users.filter((u) => u.type === 'expert' && u.expertPlan === 'premium').length;
+  // 2. Tabla 'subscriptions': Planes Básico ($0), Intermedio ($349.99) y Premium ($499.99)
+  const basicoCount = expertsList.filter((u) => u.expertPlan === 'basico' || (!u.expertPlan && u.type === 'expert')).length;
+  const intermedioCount = expertsList.filter((u) => u.expertPlan === 'intermedio').length;
+  const premiumCount = expertsList.filter((u) => u.expertPlan === 'premium').length;
 
-  const totalSubscribedExperts = basicoCount + intermedioCount + premiumCount;
-  const basicoPercent = Math.round((basicoCount / totalSubscribedExperts) * 100);
-  const intermedioPercent = Math.round((intermedioCount / totalSubscribedExperts) * 100);
-  const premiumPercent = Math.round((premiumCount / totalSubscribedExperts) * 100);
+  const totalSubscribedExperts = basicoCount + intermedioCount + premiumCount || activeExpertsCount;
+  const basicoPercent = totalSubscribedExperts > 0 ? Math.round((basicoCount / totalSubscribedExperts) * 100) : 0;
+  const intermedioPercent = totalSubscribedExperts > 0 ? Math.round((intermedioCount / totalSubscribedExperts) * 100) : 0;
+  const premiumPercent = totalSubscribedExperts > 0 ? Math.round((premiumCount / totalSubscribedExperts) * 100) : 0;
 
   const monthlySubscriptionRevenue = (intermedioCount * 349.99) + (premiumCount * 499.99);
 
+  // 3. Tabla 'Verifications_requests' (solicitudes de validación de expertos)
   const pendingVerifications = verifications.filter((v) => v.status === 'pending');
   const identityPending = pendingVerifications.filter((v) => v.type === 'identity');
   const certPending = pendingVerifications.filter((v) => v.type === 'professional_category');
 
   return (
     <div className="space-y-6">
-      {/* Pending Validation Alerts Banner */}
+      {/* Pending Validation Alerts Banner - Tabla Verifications_requests */}
       {pendingVerifications.length > 0 && (
         <div className={`border rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden transition-colors ${
           isDark
@@ -78,17 +80,17 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm sm:text-base font-bold tracking-tight">
-                    Alertas Prioritarias: {pendingVerifications.length} Documentos Pendientes de Validación
+                    Alertas Prioritarias: {pendingVerifications.length} Documentos Pendientes en Verifications_requests
                   </h3>
-                  <span className={`text-[11px] font-mono uppercase px-2 py-0.5 rounded border font-semibold ${
-                    isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-800 border-amber-300'
+                  <span className={`text-[11px] font-mono uppercase px-2 py-0.5 rounded border font-bold ${
+                    isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-200 text-amber-950 border-amber-400'
                   }`}>
-                    Revisión Requerida
+                    Tabla: Verifications_requests
                   </span>
                 </div>
                 <p className={`text-xs mt-1 max-w-2xl leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Hay {identityPending.length} solicitudes de Cédula de Identidad y {certPending.length}{' '}
-                  certificaciones de expertos (plomería, electricidad, mecánica, etc.) esperando aprobación para habilitar el envío de propuestas a clientes.
+                  certificaciones de expertos registradas en la tabla <span className="font-mono font-bold">Verifications_requests</span> esperando dictamen para habilitar propuestas.
                 </p>
               </div>
             </div>
@@ -107,6 +109,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* Primary KPI Grid: Clientes Activos, Expertos Activos, GMV & Validación */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Clientes Activos */}
+        {/* KPI 1: Clientes Activos (tabla perfiles con role_id = 1) */}
         <div className={`border rounded-2xl p-5 transition-all ${
           isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
@@ -122,16 +125,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div className={`text-2xl sm:text-3xl font-extrabold font-mono tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {activeClientsCount.toLocaleString()}
             </div>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
-              +14.2% <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+              role_id: 1
             </span>
           </div>
-          <p className={`text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Usuarios solicitando servicios en el marketplace
+          <p className={`text-[11px] mt-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Tabla <span className="font-mono font-bold">perfiles</span> (Clientes solicitantes de servicios)
           </p>
         </div>
 
-        {/* KPI 2: Expertos Activos */}
+        {/* KPI 2: Expertos Activos (tabla perfiles con role_id = 2) */}
         <div className={`border rounded-2xl p-5 transition-all ${
           isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
@@ -147,22 +150,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div className={`text-2xl sm:text-3xl font-extrabold font-mono tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {activeExpertsCount.toLocaleString()}
             </div>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
-              +8.7% <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300">
+              role_id: 2
             </span>
           </div>
-          <p className={`text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Técnicos, plomeros, electricistas, mecánicos y más
+          <p className={`text-[11px] mt-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Tabla <span className="font-mono font-bold">perfiles</span> (Técnicos y profesionales certificados)
           </p>
         </div>
 
-        {/* KPI 3: Ingresos Recurrentes por Suscripciones (MRR) */}
+        {/* KPI 3: Ingresos Recurrentes por Suscripciones (MRR) - tabla subscriptions */}
         <div className={`border rounded-2xl p-5 transition-all ${
           isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
           <div className="flex items-center justify-between mb-3">
             <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              MRR Planes Expertos
+              MRR Suscripciones
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
               <DollarSign className="w-4 h-4" />
@@ -170,19 +173,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <div className="flex items-baseline justify-between">
             <div className={`text-2xl sm:text-3xl font-extrabold font-mono tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              ${monthlySubscriptionRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}{' '}
-              <span className={`text-xs font-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pesos</span>
+              ${monthlySubscriptionRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+              <span className={`text-xs font-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>DOP</span>
             </div>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
-              +19.4% <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              Mensual
             </span>
           </div>
-          <p className={`text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Facturación mensual directa de membresías
+          <p className={`text-[11px] mt-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Tabla <span className="font-mono font-bold">subscriptions</span> (Planes Intermedio & Premium)
           </p>
         </div>
 
-        {/* KPI 4: Backlog de Verificación Documental */}
+        {/* KPI 4: Backlog de Verificación Documental - tabla Verifications_requests */}
         <div className={`border rounded-2xl p-5 transition-all ${
           isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
@@ -198,17 +201,17 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div className={`text-2xl sm:text-3xl font-extrabold font-mono tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {pendingVerifications.length}
             </div>
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-              Objetivo &lt; 4h
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+              Pendientes
             </span>
           </div>
-          <p className={`text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Expedientes esperando revisión documental
+          <p className={`text-[11px] mt-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Tabla <span className="font-mono font-bold">Verifications_requests</span> (Cédulas y Títulos)
           </p>
         </div>
       </div>
 
-      {/* Breakout: Desglose de Expertos por Plan de Suscripción */}
+      {/* Breakout: Desglose de Expertos por Plan de Suscripción (Tabla subscriptions) */}
       <div className={`border rounded-2xl p-6 transition-colors ${
         isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
       }`}>
@@ -218,26 +221,26 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Distribución de Expertos por Plan de Suscripción
               </h2>
-              <span className={`text-[11px] px-2 py-0.5 rounded border font-semibold ${
-                isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+              <span className={`text-[11px] px-2 py-0.5 rounded border font-mono font-bold ${
+                isDark ? 'bg-slate-800 text-teal-300 border-slate-700' : 'bg-teal-50 text-teal-800 border-teal-200'
               }`}>
-                Total: {totalSubscribedExperts} expertos
+                Tabla: subscriptions ({totalSubscribedExperts} expertos)
               </span>
             </div>
             <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Membresías activas para expertos en plomería, electricidad, mecánica, estética, etc.
+              Membresías activas en base de datos vinculadas a los perfiles de expertos (role_id = 2).
             </p>
           </div>
 
           <button
-            onClick={() => onNavigate('landing_plans')}
+            onClick={() => onNavigate('users')}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
               isDark
                 ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
             }`}
           >
-            <span>Ver Sección en fianex.app</span>
+            <span>Gestionar Suscripciones en BD</span>
             <ArrowUpRight className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
           </button>
         </div>

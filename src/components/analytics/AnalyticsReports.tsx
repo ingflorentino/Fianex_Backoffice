@@ -36,12 +36,12 @@ export const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({
 }) => {
   const [period, setPeriod] = useState<'7d' | '30d' | 'quarter' | 'year'>('30d');
 
-  // Stats calculation
-  const totalExperts = 284 + users.filter((u) => u.type === 'expert').length;
-  const totalClients = 1420 + users.filter((u) => u.type === 'client').length;
-  const basicoCount = 142 + users.filter((u) => u.expertPlan === 'basico').length;
-  const intermedioCount = 88 + users.filter((u) => u.expertPlan === 'intermedio').length;
-  const premiumCount = 54 + users.filter((u) => u.expertPlan === 'premium').length;
+  // Stats calculation reflecting real database tables (perfiles & subscriptions)
+  const totalExperts = users.filter((u) => u.role_id === 2 || u.type === 'expert').length;
+  const totalClients = users.filter((u) => u.role_id === 1 || u.type === 'client').length;
+  const basicoCount = users.filter((u) => (u.role_id === 2 || u.type === 'expert') && (u.expertPlan === 'basico' || !u.expertPlan)).length;
+  const intermedioCount = users.filter((u) => (u.role_id === 2 || u.type === 'expert') && u.expertPlan === 'intermedio').length;
+  const premiumCount = users.filter((u) => (u.role_id === 2 || u.type === 'expert') && u.expertPlan === 'premium').length;
 
   const mrrTotal = (intermedioCount * 349.99) + (premiumCount * 499.99);
   const arrProjected = mrrTotal * 12;

@@ -26,6 +26,7 @@ export interface AppUser {
   phone: string;
   avatar: string;
   type: 'client' | 'expert';
+  role_id: 1 | 2; // 1 = cliente, 2 = experto (tabla perfiles)
   status: 'active' | 'suspended' | 'pending';
   registeredAt: string;
   city: string;
@@ -45,12 +46,77 @@ export interface AppUser {
   bio?: string;
 }
 
+// Model corresponding strictly to Supabase table 'perfiles'
+export interface PerfilRecord {
+  id: number;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  role_id: 1 | 2; // 1: cliente, 2: experto
+  status: number;
+  is_verified: boolean | null;
+  verification_status_id: number;
+  document_number: string | null;
+  subscription_status: string | null;
+  avatar_url: string | null;
+  created_at?: string;
+  province_id?: number | null;
+  description?: string | null;
+}
+
+// Model corresponding strictly to Supabase table 'subscriptions'
+export interface SubscriptionRecord {
+  id: number | string;
+  user_id: string; // references perfiles/auth uuid
+  plan_id: 1 | 2 | 3; // 1: Básico ($0), 2: Intermedio ($349.99), 3: Premium ($499.99)
+  plan_code?: 'BASIC' | 'INTERMEDIATE' | 'PREMIUM';
+  plan_name?: string;
+  amount?: number;
+  status: 'active' | 'cancelled' | 'past_due' | 'trialing';
+  proposals_limit: number;
+  current_period_start: string;
+  current_period_end: string;
+  created_at: string;
+}
+
+// Model corresponding strictly to Supabase table 'Verifications_requests' (verification_requests)
+export interface VerificationRequestRecord {
+  id: number | string;
+  request_number: string; // e.g. '#202610-00041'
+  user_id: string;
+  request_type: 'identity' | 'certification';
+  status_id: 1 | 2 | 3 | 4; // 1: unverified, 2: pending, 3: approved, 4: rejected
+  document_number: string | null;
+  document_url: string | null;
+  document_type_id?: number;
+  requested_level?: string;
+  admin_notes?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface StorageDocumentItem {
+  name: string;
+  path: string;
+  url: string;
+  bucket: 'identity_docs' | 'professional_docs';
+  size?: string;
+  sizeBytes?: number;
+  mimetype?: string;
+  isPdf?: boolean;
+  createdAt?: string;
+}
+
 export interface VerificationRequest {
   id: string; // e.g. '#202610-00041'
+  rawId?: number | string;
   userId: string;
+  rawUserId?: string; // UUID in supabase auth/profiles
   userName: string;
   userEmail: string;
   userAvatar: string;
+  userPhone?: string;
   type: 'identity' | 'professional_category';
   docType: 'Cédula' | 'Pasaporte' | 'Licencia' | 'Título Técnico' | 'Diploma Universitario' | 'Certificación Profesional';
   idNumber?: string;
@@ -64,6 +130,8 @@ export interface VerificationRequest {
   reviewerNotes?: string;
   documentUrl: string;
   documentBackUrl?: string;
+  storageBucket?: 'identity_docs' | 'professional_docs';
+  documents?: StorageDocumentItem[];
   documentMeta: {
     issuer?: string;
     issueDate?: string;

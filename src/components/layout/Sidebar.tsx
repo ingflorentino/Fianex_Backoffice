@@ -7,7 +7,7 @@ import {
   BarChart3,
   Headphones,
   Terminal,
-  Globe2
+  LogOut
 } from 'lucide-react';
 import { AdminUser } from '../../types';
 
@@ -18,6 +18,7 @@ interface SidebarProps {
   pendingVerificationsCount: number;
   openTicketsCount: number;
   isDark: boolean;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,7 +27,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeAdmin,
   pendingVerificationsCount,
   openTicketsCount,
-  isDark
+  isDark,
+  onLogout
 }) => {
   const navItems = [
     {
@@ -156,38 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Static Page & Pricing section */}
-        <div>
-          <div className={`px-3 mb-2 text-[11px] font-bold uppercase tracking-wider ${
-            isDark ? 'text-slate-400' : 'text-slate-500'
-          }`}>
-            Portal Web & Suscripciones
-          </div>
-          <div className="space-y-1">
-            <button
-              onClick={() => onSelectView('landing_plans')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                currentView === 'landing_plans'
-                  ? isDark
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                    : 'bg-cyan-50 text-cyan-800 border border-cyan-200 font-semibold'
-                  : isDark
-                  ? 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-3 truncate">
-                <Globe2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
-                <span className="truncate">fianex.app (Planes)</span>
-              </div>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                isDark ? 'text-cyan-300 bg-cyan-950/60 border border-cyan-800' : 'text-cyan-700 bg-cyan-100 border border-cyan-200'
-              }`}>
-                Página
-              </span>
-            </button>
-          </div>
-        </div>
+
 
         {/* Connected DB status badge */}
         <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${
@@ -225,6 +196,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {activeAdmin.role.replace('_', ' ')}
             </div>
           </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Cerrar sesión"
+              className={`p-1.5 rounded-lg transition-colors ${
+                isDark
+                  ? 'text-slate-400 hover:text-red-400 hover:bg-red-500/10'
+                  : 'text-slate-500 hover:text-red-600 hover:bg-red-50'
+              }`}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </aside>

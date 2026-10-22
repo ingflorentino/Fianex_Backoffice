@@ -27,9 +27,6 @@ import {
   AuditLogsView
 } from './components/logs/AuditLogsView';
 import {
-  FianexLandingPlans
-} from './components/landing-preview/FianexLandingPlans';
-import {
   QuickSearchModal
 } from './components/common/QuickSearchModal';
 
@@ -61,14 +58,24 @@ import {
 
 import {
   fetchLiveSupabaseProfiles,
-  fetchLiveServiceRequests
+  fetchLiveSupabaseTickets,
+  fetchLiveSupabaseVerificationRequests,
+  updateSupabaseVerificationRequest,
+  addSupabaseTicketMessage,
+  updateSupabaseTicketStatus
 } from './services/supabaseService';
 
 import { printOfficialPDFReport } from './services/exportService';
+import { LoginView } from './components/auth/LoginView';
+import { getStoredSession, clearSession, persistSession, AuthSession } from './services/authService';
 
 export default function App() {
+  const [session, setSession] = useState<AuthSession | null>(() => getStoredSession());
   const [currentView, setCurrentView] = useState<string>('dashboard');
-  const [activeAdmin, setActiveAdmin] = useState<AdminUser>(getActiveAdmin());
+  const [activeAdmin, setActiveAdmin] = useState<AdminUser>(() => {
+    const stored = getStoredSession();
+    return stored?.user || getActiveAdmin();
+  });
 
   // Default theme is LIGHT as requested by user ("por defecto sea modo claro")
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -111,43 +118,27 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // Sync live Supabase profiles on load
+  // Sync live Supabase profiles, tickets & verification requests on load
   useEffect(() => {
-    fetchLiveSupabaseProfiles().then((profiles) => {
-      if (profiles && profiles.length > 0) {
-        // Map Supabase profiles to augment users list
-        const mappedUsers: AppUser[] = profiles
-          .filter((p) => p.first_name || p.phone_number)
-          .map((p) => {
-            const isExpert = p.role_id === 2 || p.current_mode_id === 2;
-            const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || `Usuario #${p.profile_id}`;
-            return {
-              id: `usr-sb-${p.profile_id}`,
-              name: fullName,
-              email: `${fullName.toLowerCase().replace(/\s+/g, '.')}@fianex.app`,
-              phone: p.phone_number || '+1 809-555-0100',
-              avatar: p.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-              type: isExpert ? 'expert' : 'client',
-              status: p.status === 1 ? 'active' : 'pending',
-              registeredAt: '2026-07-02',
-              city: p.province_name || 'Santo Domingo',
-              expertProfession: isExpert ? 'Experto Certificado' : undefined,
-              expertPlan: isExpert ? (p.profile_id % 3 === 0 ? 'premium' : p.profile_id % 2 === 0 ? 'intermedio' : 'basico') : undefined,
-              verificationStatus: p.is_verified ? 'fully_verified' : p.verification_status_name === 'unverified' ? 'unverified' : 'id_pending',
-              completedJobs: 12,
-              monthlyProposalsUsed: 4,
-              monthlyProposalsLimit: 30
-            };
-          });
+    fetchLiveSupabaseProfiles().then((liveProfiles) => {
+      if (liveProfiles && liveProfiles.length > 0) {
+        setUsers(liveProfiles);
+      }
+    });
 
-        if (mappedUsers.length > 0) {
-          // Merge preserving unique ids
-          setUsers((prev) => {
-            const existingIds = new Set(prev.map((u) => u.id));
-            const newToAdd = mappedUsers.filter((u) => !existingIds.has(u.id));
-            return [...newToAdd, ...prev];
-          });
-        }
+    fetchLiveSupabaseTickets().then((liveTickets) => {
+      if (liveTickets && liveTickets.length > 0) {
+        setTickets(liveTickets);
+      }
+    });
+
+    fetchLiveSupabaseVerificationRequests().then((liveVerifications) => {
+      if (liveVerifications && liveVerifications.length > 0) {
+        setVerifications((prev) => {
+          const liveIds = new Set(liveVerifications.map((v) => v.id));
+          const nonOverlapping = prev.filter((p) => !liveIds.has(p.id));
+          return [...liveVerifications, ...nonOverlapping];
+        });
       }
     });
   }, []);
@@ -161,27 +152,126 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const handleLoginSuccess = (user: AdminUser) => {
+    setActiveAdmin(user);
+    setSession({
+      isAuthenticated: true,
+      user,
+      provider: 'admin_credentials',
+      loggedInAt: new Date().toISOString()
+    });
+    showToast(`¡Bienvenido al Backoffice, ${user.name}!`);
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setSession(null);
+    showToast('Sesión cerrada correctamente.');
+  };
+
   const handleRoleChange = (newRole: UserRole) => {
     const updatedAdmin = setActiveAdminRole(newRole);
     setActiveAdmin(updatedAdmin);
+    if (session) {
+      const updatedSession = { ...session, user: updatedAdmin };
+      setSession(updatedSession);
+      persistSession(updatedSession);
+    }
     showToast(`Rol cambiado a: ${newRole.toUpperCase()} (${updatedAdmin.name})`);
   };
 
-  const handleApproveVerification = (id: string, notes?: string) => {
-    const result = approveVerification(id, notes);
-    if (result) {
-      setVerifications(getStoredVerifications());
-      setUsers(getStoredUsers());
-      showToast(`Solicitud ${id} aprobada con éxito.`);
+  const handleApproveVerification = async (id: string, notes?: string) => {
+    const currentAdmin = activeAdmin;
+    const now = new Date().toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' });
+    const target = verifications.find((v) => v.id === id);
+
+    // 1. Immediately update React verifications state
+    setVerifications((prev) =>
+      prev.map((v) => {
+        if (v.id === id) {
+          return {
+            ...v,
+            status: 'approved',
+            reviewedAt: now,
+            reviewedBy: `${currentAdmin.name} (${currentAdmin.role})`,
+            reviewerNotes: notes || 'Validado conforme a la documentación presentada y cotejo de registros oficiales.'
+          };
+        }
+        return v;
+      })
+    );
+
+    // 2. Persist to storage
+    approveVerification(id, notes, target);
+
+    // 3. Update user verification status in state
+    if (target) {
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === target.userId) {
+            return {
+              ...u,
+              verificationStatus: target.type === 'identity' ? (u.expertCategory ? 'cert_pending' : 'id_approved') : 'fully_verified'
+            };
+          }
+          return u;
+        })
+      );
+    }
+
+    showToast(`Solicitud ${id} aprobada con éxito.`);
+
+    // 4. Dispatch to live Supabase database
+    if (target?.rawId) {
+      await updateSupabaseVerificationRequest(target.rawId, 3, notes || 'Aprobado por el Administrador', target.rawUserId);
     }
   };
 
-  const handleRejectVerification = (id: string, reason: string, notes?: string) => {
-    const result = rejectVerification(id, reason, notes);
-    if (result) {
-      setVerifications(getStoredVerifications());
-      setUsers(getStoredUsers());
-      showToast(`Solicitud ${id} rechazada.`);
+  const handleRejectVerification = async (id: string, reason: string, notes?: string) => {
+    const currentAdmin = activeAdmin;
+    const now = new Date().toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' });
+    const target = verifications.find((v) => v.id === id);
+
+    // 1. Immediately update React verifications state
+    setVerifications((prev) =>
+      prev.map((v) => {
+        if (v.id === id) {
+          return {
+            ...v,
+            status: 'rejected',
+            reviewedAt: now,
+            reviewedBy: `${currentAdmin.name} (${currentAdmin.role})`,
+            rejectionReason: reason,
+            reviewerNotes: notes || ''
+          };
+        }
+        return v;
+      })
+    );
+
+    // 2. Persist to storage
+    rejectVerification(id, reason, notes, target);
+
+    // 3. Update user verification status in state
+    if (target) {
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === target.userId) {
+            return {
+              ...u,
+              verificationStatus: 'rejected'
+            };
+          }
+          return u;
+        })
+      );
+    }
+
+    showToast(`Solicitud ${id} rechazada.`);
+
+    // 4. Dispatch to live Supabase database
+    if (target?.rawId) {
+      await updateSupabaseVerificationRequest(target.rawId, 4, `${reason}. ${notes || ''}`.trim(), target.rawUserId);
     }
   };
 
@@ -194,12 +284,16 @@ export default function App() {
   const handleAddTicketResponse = (ticketId: string, text: string) => {
     addTicketResponse(ticketId, text);
     setTickets(getStoredTickets());
+    // Also dispatch to real Supabase database if tables are provisioned
+    addSupabaseTicketMessage(ticketId, text, `${activeAdmin.name} (${activeAdmin.role})`).catch(() => {});
     showToast(`Respuesta enviada en ticket ${ticketId}`);
   };
 
   const handleUpdateTicketStatus = (ticketId: string, status: SupportTicket['status']) => {
     updateTicketStatus(ticketId, status);
     setTickets(getStoredTickets());
+    // Also dispatch to real Supabase database if tables are provisioned
+    updateSupabaseTicketStatus(ticketId, status).catch(() => {});
     showToast(`Ticket ${ticketId} marcado como ${status.toUpperCase()}`);
   };
 
@@ -208,10 +302,10 @@ export default function App() {
       title: 'Reporte General de Operaciones Fianex Backoffice',
       subtitle: `Fecha de Corte: ${new Date().toLocaleDateString('es-DO')} · Generado por ${activeAdmin.name} (${activeAdmin.role})`,
       kpis: [
-        { label: 'Clientes Activos', value: '1,424' },
-        { label: 'Expertos Activos', value: '290' },
-        { label: 'Planes Premium Activos', value: '56' },
-        { label: 'Pendientes Verificación', value: String(verifications.filter((v) => v.status === 'pending').length) }
+        { label: 'Clientes (role_id: 1)', value: String(users.filter((u) => u.role_id === 1 || u.type === 'client').length) },
+        { label: 'Expertos (role_id: 2)', value: String(users.filter((u) => u.role_id === 2 || u.type === 'expert').length) },
+        { label: 'Planes Premium (subscriptions)', value: String(users.filter((u) => u.expertPlan === 'premium').length) },
+        { label: 'Pendientes (Verifications_requests)', value: String(verifications.filter((v) => v.status === 'pending').length) }
       ],
       tables: [
         {
@@ -231,6 +325,17 @@ export default function App() {
 
   const pendingVerificationsCount = verifications.filter((v) => v.status === 'pending').length;
   const openTicketsCount = tickets.filter((t) => t.status === 'abierto' || t.status === 'en_progreso').length;
+
+  // Authentication Gate: Show LoginView if session is not active
+  if (!session || !session.isAuthenticated) {
+    return (
+      <LoginView
+        onLoginSuccess={handleLoginSuccess}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+      />
+    );
+  }
 
   return (
     <div className={`flex h-screen w-full overflow-hidden font-sans antialiased transition-colors duration-150 ${
@@ -254,6 +359,7 @@ export default function App() {
         pendingVerificationsCount={pendingVerificationsCount}
         openTicketsCount={openTicketsCount}
         isDark={isDark}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -268,6 +374,7 @@ export default function App() {
           onOpenSearch={() => setIsQuickSearchOpen(true)}
           isDark={isDark}
           onToggleTheme={toggleTheme}
+          onLogout={handleLogout}
         />
 
         {/* Viewport View Switcher */}
@@ -349,10 +456,6 @@ export default function App() {
                 activeAdmin={activeAdmin}
                 isDark={isDark}
               />
-            )}
-
-            {currentView === 'landing_plans' && (
-              <FianexLandingPlans isDark={isDark} />
             )}
           </div>
         </main>

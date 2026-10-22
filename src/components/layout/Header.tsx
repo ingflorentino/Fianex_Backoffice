@@ -1,14 +1,13 @@
 import React from 'react';
 import {
   ShieldAlert,
-  Database,
-  Search,
   Download,
   CheckCircle2,
   ChevronDown,
   Sun,
   Moon,
-  UserCheck
+  UserCheck,
+  LogOut
 } from 'lucide-react';
 import { AdminUser, UserRole } from '../../types';
 import { ADMIN_USERS } from '../../data/mockData';
@@ -22,6 +21,7 @@ interface HeaderProps {
   onOpenSearch: () => void;
   isDark: boolean;
   onToggleTheme: () => void;
+  onLogout?: () => void;
 }
 
 const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
@@ -67,7 +67,8 @@ export const Header: React.FC<HeaderProps> = ({
   onQuickExport,
   onOpenSearch,
   isDark,
-  onToggleTheme
+  onToggleTheme,
+  onLogout
 }) => {
   const [roleMenuOpen, setRoleMenuOpen] = React.useState(false);
   const viewInfo = VIEW_TITLES[currentView] || {
@@ -131,38 +132,8 @@ export const Header: React.FC<HeaderProps> = ({
         </p>
       </div>
 
-      {/* Right Controls: Theme Toggle, Search, DB Status, Role Switcher, Quick Export */}
+      {/* Right Controls: Theme Toggle, Role Switcher, Quick Export */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Quick Search */}
-        <button
-          onClick={onOpenSearch}
-          className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
-            isDark
-              ? 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700/60'
-              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
-          }`}
-        >
-          <Search className="w-3.5 h-3.5" />
-          <span>Buscar usuario o ID...</span>
-          <kbd className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
-            isDark ? 'bg-slate-900 text-slate-400 border-slate-700' : 'bg-white text-slate-500 border-slate-300'
-          }`}>
-            ⌘K
-          </kbd>
-        </button>
-
-        {/* Database indicator */}
-        <div className={`hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs ${
-          isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'
-        }`}>
-          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400" title="Supabase DB Conectado">
-            <Database className="w-3.5 h-3.5" />
-            <span className={`text-[11px] font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Supabase Cloud
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          </div>
-        </div>
 
         {/* Theme Toggle (Light / Dark mode, default Light) */}
         <button
@@ -268,9 +239,43 @@ export const Header: React.FC<HeaderProps> = ({
                   );
                 })}
               </div>
+
+              {onLogout && (
+                <div className={`mt-2 pt-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                  <button
+                    onClick={() => {
+                      setRoleMenuOpen(false);
+                      onLogout();
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2.5 ${
+                      isDark
+                        ? 'text-red-400 hover:bg-red-500/10'
+                        : 'text-red-600 hover:bg-red-50'
+                    }`}
+                  >
+                    <LogOut className="w-4 h-4 shrink-0" />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Quick Logout Header Icon */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Cerrar sesión"
+            className={`p-2 rounded-lg border transition-colors ${
+              isDark
+                ? 'border-slate-800 bg-slate-900 text-slate-400 hover:text-red-400 hover:bg-red-500/10'
+                : 'border-slate-200 bg-white text-slate-500 hover:text-red-600 hover:bg-red-50 shadow-2xs'
+            }`}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </header>
   );
