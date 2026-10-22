@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   Search,
@@ -12,6 +12,9 @@ import {
   AlertCircle,
   MoreVertical,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   UserCheck,
   UserX,
   CreditCard,
@@ -47,8 +50,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'pending'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Pagination: 12 records per page
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
   // Selected user for details drawer
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
+
+  // Reset page to 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab, planFilter, statusFilter, searchQuery]);
 
   const filteredUsers = users.filter((u) => {
     // Filter by type or role_id (1: client, 2: expert)
@@ -67,6 +79,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     }
     return true;
   });
+
+  const totalItems = filteredUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   const handleToggleStatus = (user: AppUser) => {
     const updated: AppUser = {
@@ -277,7 +296,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                paginatedUsers.map((user) => (
                   <tr
                     key={user.id}
                     className={`transition-colors group cursor-pointer ${
@@ -522,6 +541,147 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar (12 per page) */}
+        {totalItems > 0 && (
+          <div className={`px-4 py-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs select-none transition-colors ${
+            isDark ? 'border-slate-800 bg-slate-950/40 text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'
+          }`}>
+            {/* Status range summary */}
+            <div className="flex items-center gap-1.5 font-medium">
+              <span>Mostrando</span>
+              <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{startIndex + 1}</span>
+              <span>a</span>
+              <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{endIndex}</span>
+              <span>de</span>
+              <span className={`font-bold ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>{totalItems}</span>
+              <span>usuarios</span>
+              <span className="hidden sm:inline opacity-60">· (12 por página)</span>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1">
+              {/* First page button */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={validCurrentPage <= 1}
+                className={`p-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                  validCurrentPage <= 1
+                    ? 'opacity-40 cursor-not-allowed border-transparent'
+                    : isDark
+                    ? 'border-slate-800 hover:bg-slate-800 text-slate-300'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-700 bg-white shadow-2xs'
+                }`}
+                title="Primera página"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+
+              {/* Prev button */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={validCurrentPage <= 1}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                  validCurrentPage <= 1
+                    ? 'opacity-40 cursor-not-allowed border-transparent'
+                    : isDark
+                    ? 'border-slate-800 hover:bg-slate-800 text-slate-300'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-700 bg-white shadow-2xs'
+                }`}
+                title="Página anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Anterior</span>
+              </button>
+
+              {/* Page Number Pills */}
+              <div className="flex items-center gap-1 mx-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => {
+                    if (totalPages <= 7) return true;
+                    if (p === 1 || p === totalPages) return true;
+                    if (Math.abs(p - validCurrentPage) <= 1) return true;
+                    return false;
+                  })
+                  .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                    if (idx > 0 && typeof arr[idx - 1] === 'number') {
+                      const prevPage = arr[idx - 1] as number;
+                      if ((page as number) - prevPage > 1) {
+                        acc.push(`dots-${prevPage}`);
+                      }
+                    }
+                    acc.push(page);
+                    return acc;
+                  }, [])
+                  .map((item) => {
+                    if (typeof item === 'string') {
+                      return (
+                        <span key={item} className="px-1 text-slate-400 font-bold select-none">
+                          ...
+                        </span>
+                      );
+                    }
+                    const isCurrent = item === validCurrentPage;
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setCurrentPage(item)}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                          isCurrent
+                            ? isDark
+                              ? 'bg-teal-500 text-slate-950 font-black shadow-sm'
+                              : 'bg-teal-600 text-white font-black shadow-2xs'
+                            : isDark
+                            ? 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                            : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Next button */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={validCurrentPage >= totalPages}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                  validCurrentPage >= totalPages
+                    ? 'opacity-40 cursor-not-allowed border-transparent'
+                    : isDark
+                    ? 'border-slate-800 hover:bg-slate-800 text-slate-300'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-700 bg-white shadow-2xs'
+                }`}
+                title="Página siguiente"
+              >
+                <span className="hidden sm:inline">Siguiente</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Last page button */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={validCurrentPage >= totalPages}
+                className={`p-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                  validCurrentPage >= totalPages
+                    ? 'opacity-40 cursor-not-allowed border-transparent'
+                    : isDark
+                    ? 'border-slate-800 hover:bg-slate-800 text-slate-300'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-700 bg-white shadow-2xs'
+                }`}
+                title="Última página"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* User Management Slideover / Drawer Modal */}

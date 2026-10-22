@@ -102,8 +102,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Brand Header */}
       <div className={`p-5 border-b flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2B8DA9] to-[#54C5D4] flex items-center justify-center shadow-md font-black text-white text-xl tracking-tighter">
-            F
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-xs overflow-hidden p-1 shrink-0">
+            <img src="/favicon.png" alt="Fianex" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">

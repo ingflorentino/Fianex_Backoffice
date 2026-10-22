@@ -101,10 +101,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
           }`}>
             {/* Header / Brand Icon */}
             <div className="text-center mb-6">
-              <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-[#2B8DA9]/20 to-[#54C5D4]/20 border border-teal-500/30 mb-3 shadow-inner">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2B8DA9] to-[#54C5D4] flex items-center justify-center shadow-md font-black text-white text-2xl tracking-tighter">
-                  F
-                </div>
+              <div className="inline-flex p-3 rounded-2xl bg-white dark:bg-slate-800 border border-teal-500/30 mb-3 shadow-md">
+                <img src="/favicon-full.png" alt="Fianex" className="w-14 h-14 object-contain" />
               </div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight">
                 Iniciar Sesión
