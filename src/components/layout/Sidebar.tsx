@@ -7,7 +7,9 @@ import {
   BarChart3,
   Headphones,
   Terminal,
-  LogOut
+  LogOut,
+  UserCheck,
+  Settings
 } from 'lucide-react';
 import { AdminUser } from '../../types';
 
@@ -19,6 +21,7 @@ interface SidebarProps {
   openTicketsCount: number;
   isDark: boolean;
   onLogout?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -28,7 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingVerificationsCount,
   openTicketsCount,
   isDark,
-  onLogout
+  onLogout,
+  onOpenProfile
 }) => {
   const navItems = [
     {
@@ -72,6 +76,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: isDark
         ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
         : 'bg-teal-100 text-teal-800 border border-teal-300'
+    },
+    {
+      id: 'staff',
+      label: 'Manejo de Personal',
+      icon: UserCheck,
+      badge: null
     },
     {
       id: 'logs',
@@ -179,23 +189,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Operator Session Footer */}
       <div className={`p-3 border-t ${isDark ? 'border-slate-800 bg-slate-950/40' : 'border-slate-200 bg-slate-50'}`}>
-        <div className={`flex items-center gap-3 p-2 rounded-lg border ${
+        <div className={`flex items-center gap-2.5 p-2 rounded-xl border transition-colors ${
           isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200'
         }`}>
-          <img
-            src={activeAdmin.avatar}
-            alt={activeAdmin.name}
-            className="w-9 h-9 rounded-full object-cover border border-slate-300 dark:border-slate-700 shrink-0"
-            referrerPolicy="no-referrer"
-          />
-          <div className="min-w-0 flex-1">
-            <div className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            title="Editar perfil y contraseña"
+            className="relative group shrink-0"
+          >
+            <img
+              src={activeAdmin.avatar}
+              alt={activeAdmin.name}
+              className="w-9 h-9 rounded-full object-cover border border-slate-300 dark:border-slate-700 group-hover:border-teal-500 transition-all"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+              <Settings className="w-3.5 h-3.5" />
+            </div>
+          </button>
+          
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            title="Click para editar tu foto y contraseña"
+            className="min-w-0 flex-1 text-left"
+          >
+            <div className={`text-xs font-bold truncate hover:text-teal-600 dark:hover:text-teal-400 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {activeAdmin.name}
             </div>
             <div className="text-[10px] text-teal-600 dark:text-teal-400 capitalize truncate font-mono">
               {activeAdmin.role.replace('_', ' ')}
             </div>
-          </div>
+          </button>
+
+          {onOpenProfile && (
+            <button
+              onClick={onOpenProfile}
+              title="Mi perfil y cambiar contraseña"
+              className={`p-1.5 rounded-lg transition-colors ${
+                isDark
+                  ? 'text-slate-400 hover:text-teal-300 hover:bg-slate-700'
+                  : 'text-slate-500 hover:text-teal-600 hover:bg-slate-100'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {onLogout && (
             <button
               onClick={onLogout}
@@ -206,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   : 'text-slate-500 hover:text-red-600 hover:bg-red-50'
               }`}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

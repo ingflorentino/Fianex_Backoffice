@@ -29,6 +29,12 @@ import {
 import {
   QuickSearchModal
 } from './components/common/QuickSearchModal';
+import {
+  StaffManagement
+} from './components/staff/StaffManagement';
+import {
+  UserProfileModal
+} from './components/profile/UserProfileModal';
 
 import {
   AppUser,
@@ -92,6 +98,7 @@ export default function App() {
   // Modals & Navigation helpers
   const [selectedVerificationId, setSelectedVerificationId] = useState<string | null>(null);
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Apply theme class to document.body
@@ -360,6 +367,7 @@ export default function App() {
         openTicketsCount={openTicketsCount}
         isDark={isDark}
         onLogout={handleLogout}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -375,6 +383,7 @@ export default function App() {
           isDark={isDark}
           onToggleTheme={toggleTheme}
           onLogout={handleLogout}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
         />
 
         {/* Viewport View Switcher */}
@@ -450,6 +459,17 @@ export default function App() {
               />
             )}
 
+            {currentView === 'staff' && (
+              <StaffManagement
+                activeAdmin={activeAdmin}
+                isDark={isDark}
+                onStaffChanged={() => {
+                  const currentStoredAdmin = getActiveAdmin();
+                  setActiveAdmin(currentStoredAdmin);
+                }}
+              />
+            )}
+
             {currentView === 'logs' && (
               <AuditLogsView
                 logs={logs}
@@ -474,6 +494,23 @@ export default function App() {
             setSelectedVerificationId(id);
           }
         }}
+      />
+
+      {/* Operator User Profile & Password Change Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={activeAdmin}
+        onProfileUpdated={(updated) => {
+          setActiveAdmin(updated);
+          if (session) {
+            const updatedSession = { ...session, user: updated };
+            setSession(updatedSession);
+            persistSession(updatedSession);
+          }
+          showToast('Perfil de operador actualizado exitosamente.');
+        }}
+        isDark={isDark}
       />
     </div>
   );

@@ -16,8 +16,8 @@ import {
   UserCheck
 } from 'lucide-react';
 import { AdminUser, UserRole } from '../../types';
-import { ADMIN_USERS } from '../../data/mockData';
 import { authenticateAdmin } from '../../services/authService';
+import { getStoredStaffUsers } from '../../services/storage';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AdminUser) => void;
@@ -30,8 +30,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
   isDark,
   onToggleTheme
 }) => {
-  const [email, setEmail] = useState('rivertmc@gmail.com');
-  const [password, setPassword] = useState('fianex2026');
+  const staffList = getStoredStaffUsers();
+  const superAdmin = staffList.find((s) => s.email === 'rivertmc@gmail.com') || staffList[0];
+
+  const [email, setEmail] = useState(superAdmin?.email || 'rivertmc@gmail.com');
+  const [password, setPassword] = useState(superAdmin?.password || 'Rivert2026!');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +61,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   const handleQuickSelect = (admin: AdminUser) => {
     setEmail(admin.email);
-    setPassword('fianex2026');
+    setPassword(admin.password || 'Rivert2026!');
     setErrorMessage(null);
   };
 
@@ -235,7 +238,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                {ADMIN_USERS.map((admin) => {
+                {staffList.map((admin) => {
                   const isSelected = email === admin.email;
                   return (
                     <button

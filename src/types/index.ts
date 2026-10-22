@@ -7,6 +7,11 @@ export interface AdminUser {
   role: UserRole;
   avatar: string;
   department: string;
+  phone?: string;
+  password?: string;
+  status?: 'active' | 'suspended';
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export type ExpertPlan = 'basico' | 'intermedio' | 'premium';

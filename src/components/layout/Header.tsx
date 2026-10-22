@@ -7,7 +7,9 @@ import {
   Sun,
   Moon,
   UserCheck,
-  LogOut
+  LogOut,
+  User,
+  KeyRound
 } from 'lucide-react';
 import { AdminUser, UserRole } from '../../types';
 import { ADMIN_USERS } from '../../data/mockData';
@@ -22,6 +24,7 @@ interface HeaderProps {
   isDark: boolean;
   onToggleTheme: () => void;
   onLogout?: () => void;
+  onOpenProfile?: () => void;
 }
 
 const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
@@ -49,6 +52,10 @@ const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
     title: 'Módulo de Soporte al Usuario',
     subtitle: 'Atención a consultas de clientes y expertos con SLA garantizado'
   },
+  staff: {
+    title: 'Manejo de Personal del Backoffice',
+    subtitle: 'Gestión de operadores de operaciones, soporte y directivos'
+  },
   logs: {
     title: 'Logs en Tiempo Real & Auditoría',
     subtitle: 'Trazabilidad forense para auditores y administradores de sistema'
@@ -68,7 +75,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   isDark,
   onToggleTheme,
-  onLogout
+  onLogout,
+  onOpenProfile
 }) => {
   const [roleMenuOpen, setRoleMenuOpen] = React.useState(false);
   const viewInfo = VIEW_TITLES[currentView] || {
@@ -172,6 +180,28 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden md:inline">Exportar PDF</span>
         </button>
 
+        {/* My Profile & Password Action */}
+        {onOpenProfile && (
+          <button
+            onClick={onOpenProfile}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+              isDark
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-xs'
+            }`}
+            title="Mi perfil y cambiar contraseña"
+          >
+            <img
+              src={activeAdmin.avatar}
+              alt={activeAdmin.name}
+              className="w-5 h-5 rounded-full object-cover border border-slate-300 dark:border-slate-700"
+              referrerPolicy="no-referrer"
+            />
+            <span className="hidden lg:inline text-[11px] font-bold">{activeAdmin.name.split(' ')[0]}</span>
+            <KeyRound className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+          </button>
+        )}
+
         {/* Role-Based Access Switcher */}
         <div className="relative">
           <button
@@ -240,8 +270,28 @@ export const Header: React.FC<HeaderProps> = ({
                 })}
               </div>
 
-              {onLogout && (
+              {/* Edit My Profile Link */}
+              {onOpenProfile && (
                 <div className={`mt-2 pt-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                  <button
+                    onClick={() => {
+                      setRoleMenuOpen(false);
+                      onOpenProfile();
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2.5 ${
+                      isDark
+                        ? 'text-teal-300 hover:bg-teal-500/10'
+                        : 'text-teal-700 hover:bg-teal-50'
+                    }`}
+                  >
+                    <User className="w-4 h-4 shrink-0 text-teal-500" />
+                    <span>Mi Perfil & Contraseña</span>
+                  </button>
+                </div>
+              )}
+
+              {onLogout && (
+                <div className={`mt-1 pt-1 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                   <button
                     onClick={() => {
                       setRoleMenuOpen(false);

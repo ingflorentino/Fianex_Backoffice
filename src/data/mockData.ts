@@ -17,7 +17,12 @@ export const ADMIN_USERS: AdminUser[] = [
     email: 'rivertmc@gmail.com',
     role: 'super_admin',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-    department: 'Dirección General & Tecnología Fianex'
+    department: 'Dirección General & Tecnología Fianex',
+    phone: '+1 (809) 910-3461',
+    password: 'admin',
+    status: 'active',
+    createdAt: '2026-01-10',
+    lastLogin: '2026-10-22 08:30 AM'
   },
   {
     id: 'adm-002',
@@ -25,7 +30,12 @@ export const ADMIN_USERS: AdminUser[] = [
     email: 'vsantos@fianex.app',
     role: 'ops_admin',
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80',
-    department: 'Operaciones & Verificación'
+    department: 'Operaciones & Verificación',
+    phone: '+1 (809) 555-0102',
+    password: 'admin',
+    status: 'active',
+    createdAt: '2026-02-15',
+    lastLogin: '2026-10-21 04:15 PM'
   },
   {
     id: 'adm-003',
@@ -33,7 +43,12 @@ export const ADMIN_USERS: AdminUser[] = [
     email: 'hdelacruz@fianex.app',
     role: 'system_auditor',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-    department: 'Auditoría & Cumplimiento Normativo'
+    department: 'Auditoría & Cumplimiento Normativo',
+    phone: '+1 (809) 555-0103',
+    password: 'admin',
+    status: 'active',
+    createdAt: '2026-03-01',
+    lastLogin: '2026-10-20 11:20 AM'
   },
   {
     id: 'adm-004',
@@ -41,7 +56,12 @@ export const ADMIN_USERS: AdminUser[] = [
     email: 'cpena@fianex.app',
     role: 'support_agent',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-    department: 'Centro de Soporte al Usuario'
+    department: 'Centro de Soporte al Usuario',
+    phone: '+1 (809) 555-0104',
+    password: 'admin',
+    status: 'active',
+    createdAt: '2026-04-12',
+    lastLogin: '2026-10-21 09:40 AM'
   }
 ];
 

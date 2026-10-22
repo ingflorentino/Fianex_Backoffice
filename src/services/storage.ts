@@ -24,6 +24,7 @@ import {
 
 const STORAGE_KEYS = {
   ADMIN_ROLE: 'fianex_admin_role',
+  STAFF: 'fianex_staff_users_v2',
   USERS: 'fianex_perfiles_v2', // tabla perfiles
   SUBSCRIPTIONS: 'fianex_subscriptions_v2', // tabla subscriptions
   VERIFICATIONS: 'fianex_verifications_requests_v2', // tabla Verifications_requests
@@ -69,16 +70,126 @@ function saveToStorage<T>(key: string, data: T): void {
   }
 }
 
+// Staff / Backoffice Personnel Management (isolated from app's profiles table)
+export const getStoredStaffUsers = (): AdminUser[] => {
+  return getFromStorage<AdminUser[]>(STORAGE_KEYS.STAFF, ADMIN_USERS);
+};
+
+export const saveStoredStaffUsers = (staffList: AdminUser[]): void => {
+  saveToStorage(STORAGE_KEYS.STAFF, staffList);
+};
+
+export const createStaffUser = (staffData: Omit<AdminUser, 'id'>): AdminUser => {
+  const staffList = getStoredStaffUsers();
+  const newUser: AdminUser = {
+    ...staffData,
+    id: `adm-${Date.now().toString().slice(-6)}`,
+    status: staffData.status || 'active',
+    createdAt: staffData.createdAt || new Date().toISOString().split('T')[0],
+    lastLogin: 'Pendiente de primer ingreso'
+  };
+  staffList.unshift(newUser);
+  saveStoredStaffUsers(staffList);
+
+  logAuditAction(
+    'STAFF_CREATED',
+    `Nuevo operador: ${newUser.name} (${newUser.role.toUpperCase()})`,
+    `Cuenta creada para acceso exclusivo al Backoffice (${newUser.department}). No afecta la tabla profiles.`,
+    'audit'
+  );
+
+  return newUser;
+};
+
+export const updateStaffUser = (updatedStaff: AdminUser): void => {
+  const staffList = getStoredStaffUsers();
+  const index = staffList.findIndex((u) => u.id === updatedStaff.id);
+  if (index !== -1) {
+    staffList[index] = updatedStaff;
+  } else {
+    staffList.unshift(updatedStaff);
+  }
+  saveStoredStaffUsers(staffList);
+
+  logAuditAction(
+    'STAFF_UPDATED',
+    `Operador actualizado: ${updatedStaff.name}`,
+    `Datos modificados (Rol: ${updatedStaff.role}, Departamento: ${updatedStaff.department}, Estado: ${updatedStaff.status}).`,
+    'audit'
+  );
+};
+
+export const deleteStaffUser = (id: string): boolean => {
+  const staffList = getStoredStaffUsers();
+  const target = staffList.find((u) => u.id === id);
+  if (!target) return false;
+
+  // Protect primary super admin from accidental deletion
+  if (target.email === 'rivertmc@gmail.com') {
+    return false;
+  }
+
+  const filtered = staffList.filter((u) => u.id !== id);
+  saveStoredStaffUsers(filtered);
+
+  logAuditAction(
+    'STAFF_DELETED',
+    `Operador eliminado: ${target.name} (${target.email})`,
+    `Cuenta de acceso al backoffice revocada permanentemente.`,
+    'warning'
+  );
+
+  return true;
+};
+
+export const updateAdminPassword = (userIdOrEmail: string, newPass: string): boolean => {
+  const staffList = getStoredStaffUsers();
+  const user = staffList.find((u) => u.id === userIdOrEmail || u.email.toLowerCase() === userIdOrEmail.toLowerCase());
+  if (!user) return false;
+
+  user.password = newPass;
+  saveStoredStaffUsers(staffList);
+
+  logAuditAction(
+    'STAFF_PASSWORD_CHANGED',
+    `Contraseña actualizada para: ${user.name}`,
+    `Credenciales del operador modificadas con éxito.`,
+    'audit'
+  );
+
+  return true;
+};
+
+export const updateAdminProfile = (userIdOrEmail: string, updates: Partial<AdminUser>): AdminUser | null => {
+  const staffList = getStoredStaffUsers();
+  const index = staffList.findIndex((u) => u.id === userIdOrEmail || u.email.toLowerCase() === userIdOrEmail.toLowerCase());
+  if (index === -1) return null;
+
+  staffList[index] = { ...staffList[index], ...updates };
+  saveStoredStaffUsers(staffList);
+
+  logAuditAction(
+    'STAFF_PROFILE_UPDATED',
+    `Perfil modificado para: ${staffList[index].name}`,
+    `Campos actualizados: ${Object.keys(updates).join(', ')}.`,
+    'audit'
+  );
+
+  return staffList[index];
+};
+
 // Current Admin User & Role
 export const getActiveAdmin = (): AdminUser => {
+  const staffList = getStoredStaffUsers();
   const role = (localStorage.getItem(STORAGE_KEYS.ADMIN_ROLE) as UserRole) || 'super_admin';
-  const found = ADMIN_USERS.find((u) => u.role === role);
-  return found || ADMIN_USERS[0];
+  const found = staffList.find((u) => u.role === role);
+  return found || staffList[0] || ADMIN_USERS[0];
 };
 
 export const setActiveAdminRole = (role: UserRole): AdminUser => {
   localStorage.setItem(STORAGE_KEYS.ADMIN_ROLE, role);
-  const admin = ADMIN_USERS.find((u) => u.role === role) || ADMIN_USERS[0];
+  const staffList = getStoredStaffUsers();
+  const admin = staffList.find((u) => u.role === role) || staffList[0] || ADMIN_USERS[0];
   logAuditAction(
     'OPERATOR_ROLE_SWITCH',
     `Rol de sesión cambiado a ${role.toUpperCase()}`,
