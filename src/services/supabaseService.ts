@@ -1,8 +1,8 @@
 // Real Supabase integration for Fianex Backoffice
 import { AppUser, PerfilRecord, SubscriptionRecord, VerificationRequest, SupportTicket, TicketMessage, StorageDocumentItem } from '../types';
 
-export const SUPABASE_URL = 'https://gnduehhwlxxqvaczaujr.supabase.co';
-export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduZHVlaGh3bHh4cXZhY3phdWpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjczNzA1NiwiZXhwIjoyMDg4MzEzMDU2fQ.f-z4H44uTQLJLX3Q2_E0VZ5vuV28WNMqKwwWsFE5iPs';
+export const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://gnduehhwlxxqvaczaujr.supabase.co';
+export const SUPABASE_KEY = (import.meta as any).env?.VITE_SUPABASE_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduZHVlaGh3bHh4cXZhY3phdWpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjczNzA1NiwiZXhwIjoyMDg4MzEzMDU2fQ.f-z4H44uTQLJLX3Q2_E0VZ5vuV28WNMqKwwWsFE5iPs';
 
 export interface SupabaseProfileRaw {
   id: number;
