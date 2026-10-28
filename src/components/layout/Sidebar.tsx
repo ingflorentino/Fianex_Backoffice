@@ -9,7 +9,8 @@ import {
   Terminal,
   LogOut,
   UserCheck,
-  Settings
+  Settings,
+  Globe
 } from 'lucide-react';
 import { AdminUser } from '../../types';
 
@@ -81,6 +82,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'staff',
       label: 'Manejo de Personal',
       icon: UserCheck,
+      badge: null
+    },
+    {
+      id: 'landing',
+      label: 'Portal Web & Landing',
+      icon: Globe,
       badge: null
     },
     {

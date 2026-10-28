@@ -60,9 +60,13 @@ const VIEW_TITLES: Record<string, { title: string; subtitle: string }> = {
     title: 'Logs en Tiempo Real & Auditoría',
     subtitle: 'Trazabilidad forense para auditores y administradores de sistema'
   },
+  landing: {
+    title: 'Portal Web fianex.app & Landing Page',
+    subtitle: 'Previsualización del portal web público, planes de expertos y canales de contacto'
+  },
   landing_plans: {
-    title: 'Portal Web fianex.app · Planes & Comparativa',
-    subtitle: 'Previsualización de la sección de planes para el marketplace de expertos'
+    title: 'Portal Web fianex.app & Landing Page',
+    subtitle: 'Previsualización del portal web público, planes de expertos y canales de contacto'
   }
 };
 

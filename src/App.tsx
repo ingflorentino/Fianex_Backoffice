@@ -35,6 +35,9 @@ import {
 import {
   UserProfileModal
 } from './components/profile/UserProfileModal';
+import {
+  LandingPageView
+} from './components/landing/LandingPageView';
 
 import {
   AppUser,
@@ -467,6 +470,12 @@ export default function App() {
                   const currentStoredAdmin = getActiveAdmin();
                   setActiveAdmin(currentStoredAdmin);
                 }}
+              />
+            )}
+
+            {currentView === 'landing' && (
+              <LandingPageView
+                isDark={isDark}
               />
             )}
 

@@ -13,11 +13,14 @@ import {
   Sun,
   Moon,
   Sparkles,
-  UserCheck
+  UserCheck,
+  Globe
 } from 'lucide-react';
 import { AdminUser, UserRole } from '../../types';
 import { authenticateAdmin } from '../../services/authService';
 import { getStoredStaffUsers } from '../../services/storage';
+import { LandingFooter } from '../common/LandingFooter';
+import { LandingPageView } from '../landing/LandingPageView';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AdminUser) => void;
@@ -30,6 +33,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   isDark,
   onToggleTheme
 }) => {
+  const [showLandingPage, setShowLandingPage] = useState(false);
   const staffList = getStoredStaffUsers();
   const superAdmin = staffList.find((s) => s.email === 'rivertmc@gmail.com') || staffList[0];
 
@@ -65,6 +69,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setErrorMessage(null);
   };
 
+  if (showLandingPage) {
+    return (
+      <LandingPageView
+        isDark={isDark}
+        onGoToLogin={() => setShowLandingPage(false)}
+      />
+    );
+  }
+
   return (
     <div className={`min-h-screen w-full flex flex-col justify-between transition-colors ${
       isDark ? 'bg-[#0a0e17] text-white' : 'bg-slate-50 text-slate-900'
@@ -72,24 +85,38 @@ export const LoginView: React.FC<LoginViewProps> = ({
       {/* Top Bar with Theme Toggle */}
       <header className="w-full px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2B8DA9] to-[#54C5D4] flex items-center justify-center shadow-sm text-white font-black text-base">
-            F
+          <div className="w-8 h-8 rounded-lg bg-white p-0.5 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+            <img src="/favicon.png" alt="Fianex" className="w-full h-full object-contain" />
           </div>
           <span className="font-bold text-base tracking-tight">Fianex Backoffice</span>
         </div>
 
-        <button
-          onClick={onToggleTheme}
-          title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-          className={`p-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
-            isDark
-              ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800'
-              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs'
-          }`}
-        >
-          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
-          <span className="hidden sm:inline">{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowLandingPage(true)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+              isDark
+                ? 'bg-slate-900 border-slate-700 hover:bg-slate-800 text-teal-300'
+                : 'bg-white border-slate-200 hover:bg-slate-100 text-teal-700 shadow-2xs'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5 text-teal-500" />
+            <span>Ver Landing Page</span>
+          </button>
+
+          <button
+            onClick={onToggleTheme}
+            title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            className={`p-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
+              isDark
+                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs'
+            }`}
+          >
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+            <span className="hidden sm:inline">{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Login Card Container */}
@@ -289,12 +316,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className={`py-3 text-center text-xs font-medium border-t transition-colors ${
-        isDark ? 'border-slate-800/80 text-slate-500' : 'border-slate-200 text-slate-500'
-      }`}>
-        Fianex Operations Platform © {new Date().getFullYear()} · Sistema Backoffice Desacoplado
-      </footer>
+      {/* Landing Footer with Contact Channels */}
+      <LandingFooter isDark={isDark} />
     </div>
   );
 };
